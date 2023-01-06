@@ -1,5 +1,9 @@
 import { Button } from "antd";
-import { Sections, Section } from "../components/Contents";
+import dynamic from "next/dynamic";
+import { Section } from "../components/Contents";
+const Sections = dynamic(() =>
+  import("../components/Contents").then((mod) => mod.Sections)
+);
 
 const sections: Section[] = [
   {
@@ -35,6 +39,10 @@ const sections: Section[] = [
       {
         id: "5b83b88f-625b-4f2a-9d71-1a5fe09350ac",
         title: "Item 6",
+      },
+      {
+        id: "5b83b88f-625b-4f2a-9d71-1a5fe09351ac",
+        title: "Item 7",
       },
     ],
   },

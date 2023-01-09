@@ -7,6 +7,8 @@ import {
   useSensors,
   DragOverlay,
   closestCenter,
+  MeasuringStrategy,
+  MeasuringConfiguration,
 } from "@dnd-kit/core";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import {
@@ -19,6 +21,12 @@ import Title from "antd/lib/typography/Title";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { CSS } from "@dnd-kit/utilities";
+
+const measuring: MeasuringConfiguration = {
+  droppable: {
+    strategy: MeasuringStrategy.Always,
+  },
+};
 
 export interface Content {
   id: string;
@@ -107,75 +115,58 @@ export function Contents({ sectionId, contents }: ContentsProps) {
 }
 
 export function SectionItem({ section }: SectionProps) {
-  const { setNodeRef: setDroppableRef } = useDroppable({
-    id: section.id,
-    data: {
-      type: "section",
-      item: section,
-    },
-  });
-
   const {
-    setNodeRef: setDraggableRef,
     attributes,
     listeners,
+    isDragging,
     transform,
-  } = useDraggable({
+    setDraggableNodeRef,
+    setDroppableNodeRef,
+    setActivatorNodeRef,
+    transition,
+  } = useSortable({
     id: section.id,
-    data: {
-      type: "section",
-      item: section,
+    data: { item: section, type: "section" },
+    resizeObserverConfig: {
+      updateMeasurementsFor: [],
     },
-  });
-
-  const { setNodeRef: setSortableRef } = useSortable({
-    id: section.id,
-    data: { type: "section", item: section },
   });
 
   const style = {
+    opacity: isDragging ? 0.4 : 1,
+    transition,
     transform: CSS.Translate.toString(transform),
   };
-
   return (
-    <div className="section" ref={setDroppableRef}>
-      <div className="children" ref={setDraggableRef} style={style}>
-        <div>
-          <SortableContext
-            items={section.content}
-            strategy={verticalListSortingStrategy}
-          >
-            <Row justify={"center"} align={"middle"}>
-              <div ref={setSortableRef} {...attributes} {...listeners}>
-                <Col>
-                  <HolderOutlined />
-                </Col>
+    <div className="" style={style} ref={setDroppableNodeRef}>
+      <div className="section">
+        <div className="children">
+          <Row justify="center" align="middle">
+            <Col style={{ marginRight: "5px" }} ref={setDraggableNodeRef}>
+              <div {...attributes} {...listeners}>
+                <HolderOutlined />
               </div>
-
-              <Col flex={1}>
-                <Collapse collapsible="icon">
-                  <Collapse.Panel
-                    key={section.id}
-                    header={
-                      <Row>
-                        <Col span={12}>
-                          <Title level={5}>{section.title}</Title>
-                        </Col>
-                        <Col flex="auto">
-                          <p>{section.content.length} items</p>
-                        </Col>
-                      </Row>
-                    }
-                  >
-                    <Contents
-                      sectionId={section.id}
-                      contents={section.content}
-                    />
-                  </Collapse.Panel>
-                </Collapse>
-              </Col>
-            </Row>
-          </SortableContext>
+            </Col>
+            <Col span={23}>
+              <Collapse collapsible="icon">
+                <Collapse.Panel
+                  key={section.id}
+                  header={
+                    <Row>
+                      <Col span={12}>
+                        <Title level={5}>{section.title}</Title>
+                      </Col>
+                      <Col flex="auto">
+                        <p>{section.content.length} items</p>
+                      </Col>
+                    </Row>
+                  }
+                >
+                  <Contents sectionId={section.id} contents={section.content} />
+                </Collapse.Panel>
+              </Collapse>
+            </Col>
+          </Row>
         </div>
       </div>
     </div>
@@ -192,13 +183,15 @@ function SectionItems({ sections }: SectionsProps) {
   });
 
   return (
-    <div style={{ padding: "10px" }} ref={setDroppableNodeRef}>
-      {sections.map((section, id) => (
-        <div style={{ padding: "10px" }} key={id}>
-          <SectionItem section={section} />
-        </div>
-      ))}
-    </div>
+    <SortableContext items={sections} strategy={verticalListSortingStrategy}>
+      <div style={{ padding: "10px" }} ref={setDroppableNodeRef}>
+        {sections.map((section, id) => (
+          <div style={{ padding: "10px" }} key={id}>
+            <SectionItem section={section} />
+          </div>
+        ))}
+      </div>
+    </SortableContext>
   );
 }
 
@@ -213,7 +206,11 @@ export function Sections({ sections }: SectionsProps) {
 
   return (
     <div style={{ padding: "10px" }}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        measuring={measuring}
+      >
         <SectionItems sections={items} />
       </DndContext>
       {/* {createPortal(<DragOverlay></DragOverlay>, document.body)} */}
